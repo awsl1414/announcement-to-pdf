@@ -3,7 +3,6 @@ import asyncio
 from playwright.async_api import async_playwright
 from auth import UserInfo
 
-
 width, height = 1920, 1080
 
 
