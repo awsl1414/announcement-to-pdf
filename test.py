@@ -2,7 +2,6 @@
 from playwright.sync_api import sync_playwright
 from auth import UserInfo
 
-
 width, height = 1920, 1080
 
 
@@ -209,7 +208,6 @@ def main():
         i = int(input("请输入:"))
         if i == 1:
             index()
-
         if i == 2:
             result = search()
             if res == 1:
@@ -223,7 +221,6 @@ def main():
             result2 = get_url()
             urls = result2[0]
             titles = result2[1]
-
             to_pdf(urls=urls, titles=titles)
         if i == 5:
             print("您输入了5，即将退出")
