@@ -63,6 +63,7 @@ async def index():
 
 
 async def search():
+    global res
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context(storage_state="login_data.json")
@@ -113,39 +114,43 @@ async def search():
             print(title)
         print("=" * 40)
         print("\n")
+        res = int(input("请选择是否打印：1、打印 2、不打印"))
+        if res == 1:
 
-        select1 = int(input("请选择：1、打印全部，2、打印你想打印的页数"))
-        if select1 == 1:
-            a = int(total_page)
-        if select1 == 2:
-            a = int(input("请输入你想打印的页数："))
-        b = 1
-        url_list = []
-        title_list = []
-        while b <= a:
-            b += 1
-            all_wid = await page1.query_selector_all("//ul[@class='infoul']/li")
+            select1 = int(input("请选择：1、打印全部，2、打印你想打印的页数"))
+            if select1 == 1:
+                a = int(total_page)
+            if select1 == 2:
+                a = int(input("请输入你想打印的页数："))
+            b = 1
+            url_list = []
+            title_list = []
+            while b <= a:
+                b += 1
+                all_wid = await page1.query_selector_all("//ul[@class='infoul']/li")
 
-            for i in all_wid:
-                _wid = await i.get_attribute("id")
-                wid = _wid.replace("_", "")
-                url = f"http://ehall.hnuahe.edu.cn/publicapp/sys/bulletin/bulletinDetail.do?WID={wid}#/bulletinDetail"
-                url_list.append(url)
-            title_all_new = await page1.query_selector_all(
-                "//span[@class='intro-title']")
-            for i in title_all_new:
-                title_new = await i.text_content()
-                title_list.append(title_new)
-
-            await page1.get_by_text("下一页").click()
-            await page1.wait_for_load_state('networkidle')
-
-    return url_list, title_list
+                for i in all_wid:
+                    _wid = await i.get_attribute("id")
+                    wid = _wid.replace("_", "")
+                    url = f"http://ehall.hnuahe.edu.cn/publicapp/sys/bulletin/bulletinDetail.do?WID={wid}#/bulletinDetail"
+                    url_list.append(url)
+                title_all_new = await page1.query_selector_all(
+                    "//span[@class='intro-title']")
+                for i in title_all_new:
+                    title_new = await i.text_content()
+                    title_list.append(title_new)
+                await to_pdf(urls=url_list, titles=title_list)
+                url_list.clear()
+                title_list.clear()
+                await page1.get_by_text("下一页").click()
+                await page1.wait_for_load_state('networkidle')
+    if res == 1:
+        return url_list, title_list
 
 
 async def get_url() -> list:
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=False)
+        browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context(storage_state="login_data.json")
         page1 = await context.new_page()
         await page1.goto("http://ehall.hnuahe.edu.cn/publicapp/sys/bulletin/index.do")
@@ -157,7 +162,7 @@ async def get_url() -> list:
         b = 1
         url_list = []
         title_list = []
-        # while b <= int(total_page):
+
         while b <= int(total_page):
             b += 1
             all_wid = await page1.query_selector_all("//ul[@class='infoul']/li")
@@ -171,9 +176,12 @@ async def get_url() -> list:
             for i in title_all:
                 title = await i.text_content()
                 title_list.append(title)
+            await to_pdf(urls=url_list, titles=title_list)
+            url_list.clear()
+            title_list.clear()
             await page1.get_by_text("下一页").click()
             await page1.wait_for_load_state('networkidle')
-        print(url_list)
+        # print(url_list)
 
     return url_list, title_list
 
@@ -183,10 +191,10 @@ async def to_pdf(urls, titles):
         browser = await playwright.chromium.launch(args=[
             f"--window-size={width},{height}",
         ],
-            headless=False)
+            headless=True)
         context = await browser.new_context(storage_state="login_data.json")
         page1 = await context.new_page()
-
+        # print(urls)
         for id, i in enumerate(urls):
 
             await page1.goto(f"{i}")
@@ -196,7 +204,7 @@ async def to_pdf(urls, titles):
             final_title = titles[id]
 
             await page1.pdf(
-                path=f"spider/save/{final_title}.pdf", width="1920", height="1080")
+                path=f"save/{final_title}.pdf", width="1920", height="1080")
 
 
 print("首次使用请登录，默认登陆一次")
@@ -214,20 +222,21 @@ while True:
         asyncio.run(index())
 
     if i == 2:
-        result = asyncio.run(search())
-        urls = result[0]
-        titles = result[1]
 
-        asyncio.run(to_pdf(urls=urls, titles=titles))
+        result = asyncio.run(search())
+        # if res == 1:
+        #     urls = result[0]
+        #     titles = result[1]
+        #     asyncio.run(to_pdf(urls=urls, titles=titles))
         # print(urls)
     if i == 3:
         asyncio.run(login())
     if i == 4:
         result = asyncio.run(get_url())
-        urls = result[0]
-        titles = result[1]
+        # urls = result[0]
+        # titles = result[1]
 
-        asyncio.run(to_pdf(urls=urls, titles=titles))
+        # asyncio.run(to_pdf(urls=urls, titles=titles))
     if i == 5:
         print("您输入了5，即将退出")
         break

@@ -59,6 +59,7 @@ def index():
 
 
 def search():
+    global res
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         context = browser.new_context(storage_state="login_data.json")
@@ -108,34 +109,35 @@ def search():
             print(title)
         print("=" * 40)
         print("\n")
+        res = int(input("请问是否打印：1、打印 2、不打印"))
+        if res == 1:
+            select1 = int(input("请选择：1、打印全部，2、打印你想打印的页数"))
+            if select1 == 1:
+                a = int(total_page)
+            if select1 == 2:
+                a = int(input("请输入你想打印的页数："))
+            b = 1
+            url_list = []
+            title_list = []
+            while b <= a:
+                b += 1
+                all_wid = page1.query_selector_all("//ul[@class='infoul']/li")
 
-        select1 = int(input("请选择：1、打印全部，2、打印你想打印的页数"))
-        if select1 == 1:
-            a = int(total_page)
-        if select1 == 2:
-            a = int(input("请输入你想打印的页数："))
-        b = 1
-        url_list = []
-        title_list = []
-        while b <= a:
-            b += 1
-            all_wid = page1.query_selector_all("//ul[@class='infoul']/li")
+                for i in all_wid:
+                    _wid = i.get_attribute("id")
+                    wid = _wid.replace("_", "")
+                    url = f"http://ehall.hnuahe.edu.cn/publicapp/sys/bulletin/bulletinDetail.do?WID={wid}#/bulletinDetail"
+                    url_list.append(url)
+                title_all_new = page1.query_selector_all(
+                    "//span[@class='intro-title']")
+                for i in title_all_new:
+                    title_new = i.text_content()
+                    title_list.append(title_new)
 
-            for i in all_wid:
-                _wid = i.get_attribute("id")
-                wid = _wid.replace("_", "")
-                url = f"http://ehall.hnuahe.edu.cn/publicapp/sys/bulletin/bulletinDetail.do?WID={wid}#/bulletinDetail"
-                url_list.append(url)
-            title_all_new = page1.query_selector_all(
-                "//span[@class='intro-title']")
-            for i in title_all_new:
-                title_new = i.text_content()
-                title_list.append(title_new)
-
-            page1.get_by_text("下一页").click()
-            page1.wait_for_load_state('networkidle')
-
-    return url_list, title_list
+                page1.get_by_text("下一页").click()
+                page1.wait_for_load_state('networkidle')
+        if res == 1:
+            return url_list, title_list
 
 
 def get_url() -> list:
@@ -187,7 +189,7 @@ def to_pdf(urls, titles):
             final_title = titles[id]
 
             page1.pdf(
-                path=f"spider/save/{final_title}.pdf", width="1920", height="1080")
+                path=f"save/{final_title}.pdf", width="1920", height="1080")
 
         page1.close()
         context.close()
@@ -210,17 +212,17 @@ def main():
 
         if i == 2:
             result = search()
-            urls = result[0]
-            titles = result[1]
-
-            to_pdf(urls=urls, titles=titles)
+            if res == 1:
+                urls = result[0]
+                titles = result[1]
+                to_pdf(urls=urls, titles=titles)
             # print(urls)
         if i == 3:
             login()
         if i == 4:
-            result = get_url()
-            urls = result[0]
-            titles = result[1]
+            result2 = get_url()
+            urls = result2[0]
+            titles = result2[1]
 
             to_pdf(urls=urls, titles=titles)
         if i == 5:
